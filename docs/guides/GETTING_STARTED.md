@@ -43,40 +43,50 @@ Create `.env` files in both `backend/` and `frontend/`:
 **backend/.env**
 ```
 FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_SERVICE_ACCOUNT=path/to/service-account.json
-PORT=3001
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
+PORT=8080
 ```
 
 **frontend/.env**
 ```
-REACT_APP_API_URL=http://localhost:3001/v1
-REACT_APP_FIREBASE_API_KEY=your-api-key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+VITE_API_URL=http://localhost:8080/api/v1
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
 ```
 
 ### 5. Install dependencies
 
 ```bash
-# Backend
-cd backend
-npm install
-
-# Frontend
-cd ../frontend
-npm install
+npm --prefix backend install
+npm --prefix frontend install
 ```
 
 ### 6. Start development servers
 
 ```bash
 # Terminal 1 — Backend
-cd backend
-npm run dev
+npm --prefix backend run dev
 
 # Terminal 2 — Frontend
-cd frontend
-npm start
+npm --prefix frontend run dev
+```
+
+Default local URLs:
+
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:8080/api/v1`
+
+If `localhost:8080` is already occupied, use:
+
+```powershell
+# Terminal 1 — Backend
+$env:PORT='8081'
+npm --prefix backend run dev
+
+# Terminal 2 — Frontend
+$env:VITE_API_URL='http://localhost:8081/api/v1'
+npm --prefix frontend run dev -- --port 5173 --strictPort
 ```
 
 ---

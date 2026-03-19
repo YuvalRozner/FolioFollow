@@ -90,6 +90,42 @@ FolioFollow/
 └── README.md
 ```
 
+## Local Development
+
+There is no root workspace script. Run commands per package:
+
+```bash
+npm --prefix backend install
+npm --prefix frontend install
+```
+
+Start the apps in separate terminals:
+
+```bash
+# Terminal 1
+npm --prefix backend run dev
+
+# Terminal 2
+npm --prefix frontend run dev
+```
+
+The default local setup is:
+
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:8080/api/v1`
+
+If `localhost:8080` is already in use on your machine, run the backend on `8081` and point the frontend at it:
+
+```powershell
+# Terminal 1
+$env:PORT='8081'
+npm --prefix backend run dev
+
+# Terminal 2
+$env:VITE_API_URL='http://localhost:8081/api/v1'
+npm --prefix frontend run dev -- --port 5173 --strictPort
+```
+
 ## Branching Strategy
 
 - **`main`** — Production-ready code. Only merged from `development` after testing.
