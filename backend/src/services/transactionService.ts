@@ -104,15 +104,22 @@ export class TransactionService {
     const snapshot = await collections.transactions().where('userId', '==', userId).where('accountId', '==', accountId).get();
     const transactions = snapshot.docs.map((doc) => ({ ...(doc.data() as Transaction), id: doc.id })).sort(compareTransactions);
 
-    const existingLots = await collections.lots().where('userId', '==', userId).where('accountId', '==', accountId).get();
-    const existingSales = await collections.lotSales().where('accountId', '==', accountId).get().catch(() => null);
-    const batch = collections.transactions().firestore.batch();
+    const [existingLots, existingSales] = await Promise.all([
+      collections.lots().where('userId', '==', userId).where('accountId', '==', accountId).get(),
+      collections.lotSales().where('userId', '==', userId).where('accountId', '==', accountId).get(),
+    ]);
 
-    existingLots.docs.forEach((doc) => batch.delete(collections.lots().doc(doc.id)));
-    if (existingSales) existingSales.docs.forEach((doc) => batch.delete(collections.lotSales().doc(doc.id)));
+    const deleteRefs = [...existingLots.docs.map((doc) => doc.ref), ...existingSales.docs.map((doc) => doc.ref)];
+    for (let i = 0; i < deleteRefs.length; i += 499) {
+      const batch = collections.transactions().firestore.batch();
+      deleteRefs.slice(i, i + 499).forEach((ref) => batch.delete(ref));
+      await batch.commit();
+    }
 
     const balances: Record<Currency, number> = { [Currency.ILS]: 0, [Currency.USD]: 0 };
     const openLots: Lot[] = [];
+    const lotWrites: Array<{ lot: Lot; merge?: boolean }> = [];
+    const lotSaleWrites: LotSale[] = [];
 
     for (const tx of transactions) {
       switch (tx.type) {
@@ -143,7 +150,7 @@ export class TransactionService {
             updatedAt: tx.updatedAt,
           } as Lot & { createdAt: string; updatedAt: string };
           openLots.push(lot as Lot);
-          batch.set(collections.lots().doc(lot.id), lot);
+          lotWrites.push({ lot });
           break;
         }
         case TransactionType.SELL: {
@@ -160,7 +167,7 @@ export class TransactionService {
             const realizedPnlILS = tx.currency === Currency.USD
               ? (realizedPnlUSD ?? 0) * (tx.exchangeRate ?? 1)
               : (tx.pricePerUnit - lot.costPerUnit) * quantitySold;
-            const lotSale: LotSale & { accountId: string; userId: string } = {
+            const lotSale: LotSale = {
               id: uuidv4(),
               lotId: lot.id,
               sellTransactionId: tx.id,
@@ -175,7 +182,7 @@ export class TransactionService {
               accountId,
               userId,
             };
-            batch.set(collections.lotSales().doc(lotSale.id), lotSale);
+            lotSaleWrites.push(lotSale);
           }
           if (remainingToSell > 0) throw badRequest('Not enough lot quantity available to fulfill sell transaction');
           balances[tx.currency] += tx.totalAmount;
@@ -185,10 +192,26 @@ export class TransactionService {
     }
 
     openLots.forEach((lot) => {
-      batch.set(collections.lots().doc(lot.id), lot, { merge: true });
+      lotWrites.push({ lot, merge: true });
     });
 
-    await batch.commit();
+    const writes = [
+      ...lotWrites.map(({ lot, merge }) => ({ ref: collections.lots().doc(lot.id), data: lot, merge })),
+      ...lotSaleWrites.map((lotSale) => ({ ref: collections.lotSales().doc(lotSale.id), data: lotSale, merge: undefined })),
+    ];
+
+    for (let i = 0; i < writes.length; i += 499) {
+      const batch = collections.transactions().firestore.batch();
+      writes.slice(i, i + 499).forEach(({ ref, data, merge }) => {
+        if (merge) {
+          batch.set(ref, data, { merge: true });
+          return;
+        }
+        batch.set(ref, data);
+      });
+      await batch.commit();
+    }
+
     await cashService.replaceBalances(userId, accountId, balances);
   }
 

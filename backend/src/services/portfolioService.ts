@@ -16,11 +16,11 @@ export class PortfolioService {
       accountService.listByUser(userId),
       exchangeRateService.getLatestRateValue(),
       securityService.list(),
-      collections.lotSales().where('userId', '==', userId).get().catch(() => null),
+      collections.lotSales().where('userId', '==', userId).get(),
     ]);
 
     const lots = lotsSnapshot.docs.map((doc) => ({ ...(doc.data() as Lot), id: doc.id })).filter((lot) => lot.quantityRemaining > 0);
-    const lotSales = (lotSalesSnapshot?.docs.map((doc) => ({ ...(doc.data() as LotSale & { userId: string }), id: doc.id })) ?? []);
+    const lotSales = lotSalesSnapshot.docs.map((doc) => ({ ...(doc.data() as LotSale), id: doc.id }));
     const securityMap = new Map<string, Security>(allSecurities.map((security) => [security.id, security] as [string, Security]));
     const accountMap = new Map(accounts.map((account) => [account.id, account]));
 
@@ -32,35 +32,41 @@ export class PortfolioService {
       grouped.set(key, bucket);
     }
 
-    return Array.from(grouped.entries()).map(([key, groupLots]) => {
-      const [groupAccountId, groupSecurityId] = key.split(':');
-      const security = securityMap.get(groupSecurityId)!;
-      const account = accountMap.get(groupAccountId)!;
-      const relatedSales = lotSales.filter((sale) => groupLots.some((lot) => lot.id === sale.lotId));
-      const calculated = returnsCalculator.calculateSecurity({
-        security,
-        lots: groupLots,
-        lotSales: relatedSales,
-        currentUsdIlsRate: latestRate,
-      });
-      return {
-        securityId: groupSecurityId,
-        symbol: security.symbol,
-        name: security.name,
-        accountId: groupAccountId,
-        accountName: account.name,
-        totalQuantity: calculated.totalQuantity,
-        weightedAvgCost: calculated.weightedAvgCost,
-        currentPrice: calculated.currentPrice,
-        currency: security.currency,
-        marketValueILS: calculated.marketValueILS,
-        marketValueUSD: calculated.marketValueUSD,
-        unrealizedPnlILS: calculated.totalUnrealizedPnlILS,
-        unrealizedPnlPercent: calculated.totalReturnPercent,
-        realizedPnlILS: calculated.totalRealizedPnlILS,
-        lots: calculated.lots,
-      } as HoldingRow;
-    });
+    return Array.from(grouped.entries())
+      .map(([key, groupLots]) => {
+        const [groupAccountId, groupSecurityId] = key.split(':');
+        const security = securityMap.get(groupSecurityId);
+        const account = accountMap.get(groupAccountId);
+        if (!security || !account) {
+          console.warn(`Skipping orphaned holding group: security=${groupSecurityId}, account=${groupAccountId}`);
+          return null;
+        }
+        const relatedSales = lotSales.filter((sale) => groupLots.some((lot) => lot.id === sale.lotId));
+        const calculated = returnsCalculator.calculateSecurity({
+          security,
+          lots: groupLots,
+          lotSales: relatedSales,
+          currentUsdIlsRate: latestRate,
+        });
+        return {
+          securityId: groupSecurityId,
+          symbol: security.symbol,
+          name: security.name,
+          accountId: groupAccountId,
+          accountName: account.name,
+          totalQuantity: calculated.totalQuantity,
+          weightedAvgCost: calculated.weightedAvgCost,
+          currentPrice: calculated.currentPrice,
+          currency: security.currency,
+          marketValueILS: calculated.marketValueILS,
+          marketValueUSD: calculated.marketValueUSD,
+          unrealizedPnlILS: calculated.totalUnrealizedPnlILS,
+          unrealizedPnlPercent: calculated.totalReturnPercent,
+          realizedPnlILS: calculated.totalRealizedPnlILS,
+          lots: calculated.lots,
+        } as HoldingRow;
+      })
+      .filter((holding): holding is HoldingRow => holding !== null);
   }
 
   async getSummary(userId: string, accountId?: string): Promise<PortfolioSummary> {

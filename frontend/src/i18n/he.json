@@ -15,6 +15,7 @@
   "auth": {
     "signIn": "התחבר",
     "signInWithGoogle": "התחבר עם Google",
+    "or": "או",
     "tryDemo": "נסה מצב דמו",
     "signOut": "התנתק",
     "welcome": "ברוך הבא ל-FolioFollow",

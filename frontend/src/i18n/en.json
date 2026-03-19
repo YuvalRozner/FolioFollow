@@ -15,6 +15,7 @@
   "auth": {
     "signIn": "Sign In",
     "signInWithGoogle": "Sign in with Google",
+    "or": "OR",
     "tryDemo": "Try Demo Mode",
     "signOut": "Sign Out",
     "welcome": "Welcome to FolioFollow",

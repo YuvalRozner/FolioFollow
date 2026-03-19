@@ -186,6 +186,8 @@ export interface LotSale {
   realizedPnlUSD?: number;
   date: string;
   createdAt: string;
+  userId: string;
+  accountId: string;
 }
 
 // --- Cash Balance ---

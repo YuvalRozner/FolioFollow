@@ -37,7 +37,27 @@ export class AccountService {
 
   async delete(userId: string, accountId: string): Promise<void> {
     await this.getById(userId, accountId);
-    await collections.accounts().doc(accountId).delete();
+
+    const [transactionsSnapshot, lotsSnapshot, lotSalesSnapshot, cashBalancesSnapshot] = await Promise.all([
+      collections.transactions().where('userId', '==', userId).where('accountId', '==', accountId).get(),
+      collections.lots().where('userId', '==', userId).where('accountId', '==', accountId).get(),
+      collections.lotSales().where('userId', '==', userId).where('accountId', '==', accountId).get(),
+      collections.cashBalances().where('userId', '==', userId).where('accountId', '==', accountId).get(),
+    ]);
+
+    const refs = [
+      ...transactionsSnapshot.docs.map((doc) => doc.ref),
+      ...lotsSnapshot.docs.map((doc) => doc.ref),
+      ...lotSalesSnapshot.docs.map((doc) => doc.ref),
+      ...cashBalancesSnapshot.docs.map((doc) => doc.ref),
+      collections.accounts().doc(accountId),
+    ];
+
+    for (let i = 0; i < refs.length; i += 499) {
+      const batch = collections.accounts().firestore.batch();
+      refs.slice(i, i + 499).forEach((ref) => batch.delete(ref));
+      await batch.commit();
+    }
   }
 }
 

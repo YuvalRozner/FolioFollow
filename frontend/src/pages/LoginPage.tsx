@@ -94,7 +94,7 @@ export default function LoginPage() {
           </Button>
 
           <Divider style={{ borderColor: '#30363d', margin: '4px 0' }}>
-            <span style={{ color: '#484f58', fontSize: 12 }}>OR</span>
+            <span style={{ color: '#484f58', fontSize: 12 }}>{t('auth.or')}</span>
           </Divider>
 
           {/* Demo Mode */}

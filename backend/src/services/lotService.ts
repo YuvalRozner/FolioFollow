@@ -30,8 +30,9 @@ export class LotService {
     const lots = await this.list(userId, { securityId });
     const security = await securityService.getById(securityId);
     const latestRate = await exchangeRateService.getLatestRateValue();
-    const lotSalesSnapshot = await collections.lotSales().where('userId', '==', userId).get().catch(() => null);
-    const lotSales = (lotSalesSnapshot?.docs.map((doc) => ({ ...(doc.data() as LotSale & { userId: string }) })) ?? [])
+    const lotSalesSnapshot = await collections.lotSales().where('userId', '==', userId).get();
+    const lotSales = lotSalesSnapshot.docs
+      .map((doc) => ({ ...(doc.data() as LotSale), id: doc.id }))
       .filter((sale) => lots.some((lot) => lot.id === sale.lotId));
     const calculated = returnsCalculator.calculateSecurity({ security, lots, lotSales, currentUsdIlsRate: latestRate });
     return {

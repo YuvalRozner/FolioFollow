@@ -22,7 +22,10 @@ export class ExchangeRateService {
 
   async getLatestRateValue(): Promise<number> {
     const latest = await this.latest();
-    return latest?.rate ?? 1;
+    if (!latest) {
+      throw new Error('No exchange rate data available');
+    }
+    return latest.rate;
   }
 
   async create(payload: CreateExchangeRateDTO, updatedBy?: string): Promise<ExchangeRate> {
