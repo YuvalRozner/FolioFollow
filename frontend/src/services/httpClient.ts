@@ -1,7 +1,9 @@
 import axios from 'axios';
 import type { AxiosError } from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.DEV ? 'http://localhost:8080/api/v1' : '/api/v1'
+);
 
 let tokenGetter: (() => Promise<string | null>) | null = null;
 
