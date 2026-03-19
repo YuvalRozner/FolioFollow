@@ -10,6 +10,7 @@ import type {
   CreateTransactionDTO,
   CreateExchangeRateDTO,
   CreateSecurityDTO,
+  CreateAccountDTO,
   Lot,
   UpdatePriceDTO,
 } from '../../types';
@@ -62,6 +63,10 @@ async function putData<TResponse, TRequest>(url: string, body: TRequest): Promis
   return response.data.data;
 }
 
+async function deleteData(url: string): Promise<void> {
+  await http.delete(url);
+}
+
 // ===== ACCOUNTS =====
 export async function getAccounts(): Promise<Account[]> {
   if (_isDemoMode) {
@@ -69,6 +74,43 @@ export async function getAccounts(): Promise<Account[]> {
   }
 
   return getData<Account[]>('/accounts');
+}
+
+export async function createAccount(dto: CreateAccountDTO): Promise<Account> {
+  if (_isDemoMode) {
+    const newAcc: Account = {
+      id: `acc_${Date.now()}`,
+      userId: 'user_demo',
+      ...dto,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockAccounts.push(newAcc);
+    return cloneMockData(newAcc);
+  }
+
+  return postData<Account, CreateAccountDTO>('/accounts', dto);
+}
+
+export async function updateAccount(id: string, dto: Partial<CreateAccountDTO>): Promise<Account> {
+  if (_isDemoMode) {
+    const acc = mockAccounts.find(a => a.id === id);
+    if (!acc) throw new Error('Account not found');
+    Object.assign(acc, dto, { updatedAt: new Date().toISOString() });
+    return cloneMockData(acc);
+  }
+
+  return putData<Account, Partial<CreateAccountDTO>>(`/accounts/${id}`, dto);
+}
+
+export async function deleteAccount(id: string): Promise<void> {
+  if (_isDemoMode) {
+    const idx = mockAccounts.findIndex(a => a.id === id);
+    if (idx !== -1) mockAccounts.splice(idx, 1);
+    return;
+  }
+
+  return deleteData(`/accounts/${id}`);
 }
 
 // ===== SECURITIES =====

@@ -7,11 +7,12 @@ import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import {
+  getAccounts, createAccount, updateAccount, deleteAccount,
   getSecurities, getExchangeRates, getUsers, createSecurity,
   updateSecurityPrice, createExchangeRate, updateUserRole,
 } from '../services/api';
 import { formatNumber, formatDate } from '../utils/format';
-import type { Security, ExchangeRate, User } from '../../types';
+import type { Account, Security, ExchangeRate, User, CreateAccountDTO } from '../../types';
 
 export default function AdminPage() {
   const { t } = useTranslation();
@@ -22,14 +23,200 @@ export default function AdminPage() {
         {t('admin.title')}
       </h1>
       <Tabs
-        defaultActiveKey="securities"
+        defaultActiveKey="accounts"
         items={[
+          { key: 'accounts', label: t('admin.accounts'), children: <AccountsTab /> },
           { key: 'securities', label: t('admin.securities'), children: <SecuritiesTab /> },
           { key: 'exchangeRates', label: t('admin.exchangeRates'), children: <ExchangeRatesTab /> },
           { key: 'users', label: t('admin.users'), children: <UsersTab /> },
         ]}
         style={{ color: '#e6edf3' }}
       />
+    </div>
+  );
+}
+
+// ===== ACCOUNTS TAB =====
+function AccountsTab() {
+  const { t } = useTranslation();
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [form] = Form.useForm();
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const data = await getAccounts();
+      setAccounts(data);
+    } catch (err) {
+      console.error('Failed to load accounts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  const handleAdd = async () => {
+    try {
+      const values = await form.validateFields();
+      await createAccount(values as CreateAccountDTO);
+      message.success(t('admin.accountCreated'));
+      form.resetFields();
+      setShowAdd(false);
+      loadData();
+    } catch (err) { /* validation */ }
+  };
+
+  const handleEdit = async () => {
+    if (!editingAccount) return;
+    try {
+      const values = await form.validateFields();
+      await updateAccount(editingAccount.id, values);
+      message.success(t('admin.accountUpdated'));
+      form.resetFields();
+      setEditingAccount(null);
+      loadData();
+    } catch (err) { /* validation */ }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteAccount(id);
+      message.success(t('admin.accountDeleted'));
+      loadData();
+    } catch (err) {
+      message.error('Failed to delete account');
+    }
+  };
+
+  const openEdit = (account: Account) => {
+    setEditingAccount(account);
+    form.setFieldsValue({
+      name: account.name,
+      institution: account.institution,
+      type: account.type,
+      currency: account.currency,
+      notes: account.notes || '',
+    });
+  };
+
+  const columns: ColumnsType<Account> = [
+    {
+      title: t('admin.accountName'), dataIndex: 'name', key: 'name', width: 200,
+      render: (v: string) => <span style={{ fontWeight: 700, color: '#e6edf3' }}>{v}</span>,
+    },
+    {
+      title: t('admin.institution'), dataIndex: 'institution', key: 'institution', width: 180,
+    },
+    {
+      title: t('admin.accountType'), dataIndex: 'type', key: 'type', width: 140,
+      render: (v: string) => (
+        <Tag style={{ background: 'rgba(31,111,235,0.1)', color: '#79c0ff', border: 'none' }}>
+          {t(`admin.accountTypes.${v}`)}
+        </Tag>
+      ),
+    },
+    {
+      title: t('admin.accountCurrency'), dataIndex: 'currency', key: 'currency', width: 100,
+      render: (c: string) => (
+        <Tag style={{ background: 'rgba(139,148,158,0.1)', color: '#8b949e', border: 'none' }}>{c}</Tag>
+      ),
+    },
+    {
+      title: t('admin.notes'), dataIndex: 'notes', key: 'notes', width: 180, ellipsis: true,
+      render: (v: string) => v || '\u2014',
+    },
+    {
+      title: t('admin.actions'), key: 'actions', width: 120,
+      render: (_: unknown, record: Account) => (
+        <Space size={8}>
+          <Button
+            type="link"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => openEdit(record)}
+            style={{ color: '#1f6feb' }}
+          />
+          <Popconfirm
+            title={t('admin.deleteAccountConfirm')}
+            onConfirm={() => handleDelete(record.id)}
+            okText={t('admin.confirm')}
+            cancelText={t('common.cancel')}
+          >
+            <Button type="link" size="small" icon={<DeleteOutlined />} style={{ color: '#f85149' }} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  const formContent = (
+    <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+      <Form.Item name="name" label={t('admin.accountName')} rules={[{ required: true }]}>
+        <Input placeholder="IBI SPARK" />
+      </Form.Item>
+      <Form.Item name="institution" label={t('admin.institution')} rules={[{ required: true }]}>
+        <Input placeholder="IBI" />
+      </Form.Item>
+      <Space style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <Form.Item name="type" label={t('admin.accountType')} rules={[{ required: true }]}>
+          <Select>
+            {['brokerage', 'pension', 'other'].map(type => (
+              <Select.Option key={type} value={type}>{t(`admin.accountTypes.${type}`)}</Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+        <Form.Item name="currency" label={t('admin.accountCurrency')} rules={[{ required: true }]}>
+          <Select>
+            <Select.Option value="ILS">\u20aa ILS</Select.Option>
+            <Select.Option value="USD">$ USD</Select.Option>
+          </Select>
+        </Form.Item>
+      </Space>
+      <Form.Item name="notes" label={t('admin.notes')}>
+        <Input.TextArea rows={2} />
+      </Form.Item>
+    </Form>
+  );
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); setShowAdd(true); }}
+          style={{ background: '#2ea043', borderColor: '#2ea043', fontWeight: 600 }}>
+          {t('admin.addAccount')}
+        </Button>
+      </div>
+      <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: 12, overflow: 'hidden' }}>
+        <Table columns={columns} dataSource={accounts} rowKey="id" loading={loading} pagination={false} size="middle" />
+      </div>
+
+      {/* Add Account Modal */}
+      <Modal
+        title={t('admin.addAccount')}
+        open={showAdd}
+        onOk={handleAdd}
+        onCancel={() => setShowAdd(false)}
+        okText={t('admin.save')}
+        className="dark-modal"
+      >
+        {formContent}
+      </Modal>
+
+      {/* Edit Account Modal */}
+      <Modal
+        title={t('admin.editAccount')}
+        open={!!editingAccount}
+        onOk={handleEdit}
+        onCancel={() => { setEditingAccount(null); form.resetFields(); }}
+        okText={t('admin.save')}
+        className="dark-modal"
+      >
+        {formContent}
+      </Modal>
     </div>
   );
 }
