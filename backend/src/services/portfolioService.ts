@@ -1,4 +1,4 @@
-import { Currency, HoldingRow, Lot, LotSale, PortfolioSummary, Security } from '@shared/types';
+import { Currency, HoldingRow, Lot, LotSale, PortfolioSummary, Security } from '../shared/types';
 import { collections } from './baseService';
 import { accountService } from './accountService';
 import { cashService } from './cashService';

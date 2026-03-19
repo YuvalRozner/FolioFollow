@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { UserRole } from '@shared/types';
+import { UserRole } from '../shared/types';
 import { forbidden, unauthorized } from '../utils/errors';
 
 export const adminOnly = (req: Request, _res: Response, next: NextFunction) => {

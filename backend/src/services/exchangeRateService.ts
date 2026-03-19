@@ -1,5 +1,5 @@
-import { CreateExchangeRateDTO, ExchangeRate, RateSource } from '@shared/types';
-import { DEFAULT_CURRENCY_PAIR } from '@shared/constants';
+import { CreateExchangeRateDTO, ExchangeRate, RateSource } from '../shared/types';
+import { DEFAULT_CURRENCY_PAIR } from '../shared/constants';
 import { v4 as uuidv4 } from 'uuid';
 import { collections } from './baseService';
 import { nowIso, normalizeDate } from '../utils/date';

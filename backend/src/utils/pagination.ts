@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '@shared/constants';
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../shared/constants';
 
 export const getPagination = (page?: number, limit?: number) => {
   const normalizedPage = Math.max(1, Number(page) || 1);

@@ -11,7 +11,7 @@ const required = (name: string, fallback?: string): string => {
 };
 
 const requiredCorsOrigin = (): string => {
-  const fallback = process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : undefined;
+  const fallback = 'https://foliofollow.web.app,https://foliofollow.firebaseapp.com,http://localhost:5173';
   return required('CORS_ORIGIN', fallback);
 };
 
@@ -25,10 +25,10 @@ export const env = {
   port: Number(process.env.PORT ?? 8080),
   apiPrefix: process.env.API_PREFIX ?? '/api/v1',
   corsOrigin: requiredCorsOrigin(),
-  firebaseProjectId: required('FIREBASE_PROJECT_ID', 'foliofollow-dev'),
+  firebaseProjectId: required('FIREBASE_PROJECT_ID', 'foliofollow'),
   firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   firebaseServiceAccountKey: process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
-  useFirebaseEmulators: bool(process.env.USE_FIREBASE_EMULATORS, true),
+  useFirebaseEmulators: bool(process.env.USE_FIREBASE_EMULATORS, false),
   firestoreEmulatorHost: process.env.FIRESTORE_EMULATOR_HOST,
   firebaseAuthEmulatorHost: process.env.FIREBASE_AUTH_EMULATOR_HOST,
 };

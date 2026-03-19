@@ -1,4 +1,4 @@
-import { UserRole } from '@shared/types';
+import { UserRole } from '../shared/types';
 
 export interface AuthenticatedUser {
   uid: string;

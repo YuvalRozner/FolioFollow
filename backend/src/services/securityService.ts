@@ -1,4 +1,4 @@
-import { CreateSecurityDTO, Security } from '@shared/types';
+import { CreateSecurityDTO, Security } from '../shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { collections } from './baseService';
 import { nowIso } from '../utils/date';

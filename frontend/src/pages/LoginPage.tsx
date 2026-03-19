@@ -1,4 +1,4 @@
-import { Button, Card, Divider, Space, Spin } from 'antd';
+import { Button, Card, Divider, Space, Spin, message } from 'antd';
 import { GoogleOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -10,8 +10,14 @@ export default function LoginPage() {
   const { loginWithGoogle, loginDemo, loading } = useAuth();
 
   const handleGoogle = async () => {
-    await loginWithGoogle();
-    navigate('/');
+    try {
+      await loginWithGoogle();
+      navigate('/');
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : t('auth.loginFailed');
+      message.error(errorMessage);
+    }
   };
 
   const handleDemo = () => {

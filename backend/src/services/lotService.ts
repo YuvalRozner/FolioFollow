@@ -1,4 +1,4 @@
-import { Lot, LotSale } from '@shared/types';
+import { Lot, LotSale } from '../shared/types';
 import { collections } from './baseService';
 import { notFound } from '../utils/errors';
 import { securityService } from './securityService';

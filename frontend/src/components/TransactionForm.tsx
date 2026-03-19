@@ -1,11 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Modal, Form, Select, InputNumber, DatePicker, Input, Radio, Space, message,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { mockAccounts, mockSecurities } from '../services/mockData';
-import { createTransaction } from '../services/api';
+import { createTransaction, getAccounts, getSecurities } from '../services/api';
 import { formatCurrency } from '../utils/format';
 
 interface TransactionFormProps {
@@ -18,6 +17,8 @@ export default function TransactionForm({ open, onClose, onSuccess }: Transactio
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
+  const [securities, setSecurities] = useState<{ id: string; symbol: string; name: string }[]>([]);
   const txnType = Form.useWatch('type', form);
   const quantity = Form.useWatch('quantity', form);
   const pricePerUnit = Form.useWatch('pricePerUnit', form);
@@ -25,6 +26,28 @@ export default function TransactionForm({ open, onClose, onSuccess }: Transactio
 
   const isTradeType = txnType === 'buy' || txnType === 'sell';
   const totalAmount = (quantity || 0) * (pricePerUnit || 0);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const loadOptions = async () => {
+      const [accountsData, securitiesData] = await Promise.all([
+        getAccounts(),
+        getSecurities(),
+      ]);
+
+      setAccounts(accountsData.map(account => ({ id: account.id, name: account.name })));
+      setSecurities(securitiesData.map(security => ({
+        id: security.id,
+        symbol: security.symbol,
+        name: security.name,
+      })));
+    };
+
+    loadOptions();
+  }, [open]);
 
   const handleSubmit = async () => {
     try {
@@ -85,7 +108,7 @@ export default function TransactionForm({ open, onClose, onSuccess }: Transactio
         {/* Account */}
         <Form.Item name="accountId" label={t('transactions.account')} rules={[{ required: true }]}>
           <Select placeholder={t('transactionForm.selectAccount')}>
-            {mockAccounts.map(acc => (
+            {accounts.map(acc => (
               <Select.Option key={acc.id} value={acc.id}>{acc.name}</Select.Option>
             ))}
           </Select>
@@ -98,7 +121,7 @@ export default function TransactionForm({ open, onClose, onSuccess }: Transactio
               placeholder={t('transactionForm.selectSecurity')}
               showSearch
               optionFilterProp="label"
-              options={mockSecurities.map(sec => ({
+              options={securities.map(sec => ({
                 value: sec.id,
                 label: `${sec.symbol} — ${sec.name}`,
               }))}

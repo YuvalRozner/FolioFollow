@@ -1,4 +1,4 @@
-import { CashBalance, Currency, Transaction, TransactionType } from '@shared/types';
+import { CashBalance, Currency, Transaction, TransactionType } from '../shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { collections } from './baseService';
 import { nowIso } from '../utils/date';
