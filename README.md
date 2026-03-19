@@ -109,6 +109,8 @@ See the [`docs/`](./docs/) directory for:
 - [Data Models](./docs/models/DATA_MODELS.md)
 - [API Reference](./docs/api/API_REFERENCE.md)
 - [Getting Started Guide](./docs/guides/GETTING_STARTED.md)
+- [Product Requirements Document](./docs/product/PRD.md)
+- [Project Roadmap](./docs/product/ROADMAP.md)
 
 ## License
 
