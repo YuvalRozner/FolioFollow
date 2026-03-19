@@ -42,22 +42,27 @@ export default function TransactionsPage() {
 
   const loadData = async () => {
     setLoading(true);
-    const filters: Record<string, string | undefined> = {};
-    if (accountFilter !== 'all') filters.accountId = accountFilter;
-    if (typeFilter !== 'all') filters.type = typeFilter;
-    if (securityFilter !== 'all') filters.securityId = securityFilter;
-    if (currencyFilter !== 'all') filters.currency = currencyFilter;
+    try {
+      const filters: Record<string, string | undefined> = {};
+      if (accountFilter !== 'all') filters.accountId = accountFilter;
+      if (typeFilter !== 'all') filters.type = typeFilter;
+      if (securityFilter !== 'all') filters.securityId = securityFilter;
+      if (currencyFilter !== 'all') filters.currency = currencyFilter;
 
-    const [transactionsData, accountsData, securitiesData] = await Promise.all([
-      getTransactions(filters),
-      getAccounts(),
-      getSecurities(),
-    ]);
+      const [transactionsData, accountsData, securitiesData] = await Promise.all([
+        getTransactions(filters),
+        getAccounts(),
+        getSecurities(),
+      ]);
 
-    setTransactions(transactionsData);
-    setAccounts(accountsData);
-    setSecurities(securitiesData);
-    setLoading(false);
+      setTransactions(transactionsData);
+      setAccounts(accountsData);
+      setSecurities(securitiesData);
+    } catch (err) {
+      console.error('Failed to load transactions:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadData(); }, [accountFilter, typeFilter, securityFilter, currencyFilter]);

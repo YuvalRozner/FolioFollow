@@ -40,17 +40,22 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [hist, bench, hold, sum] = await Promise.all([
-        getPortfolioHistory(),
-        getBenchmarkData(),
-        getHoldings(),
-        getPortfolioSummary(),
-      ]);
-      setHistoryData(hist);
-      setBenchmarkData(bench);
-      setHoldings(hold);
-      setSummary(sum);
-      setLoading(false);
+      try {
+        const [hist, bench, hold, sum] = await Promise.all([
+          getPortfolioHistory(),
+          getBenchmarkData(),
+          getHoldings(),
+          getPortfolioSummary(),
+        ]);
+        setHistoryData(hist);
+        setBenchmarkData(bench);
+        setHoldings(hold);
+        setSummary(sum);
+      } catch (err) {
+        console.error('Failed to load analytics:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
