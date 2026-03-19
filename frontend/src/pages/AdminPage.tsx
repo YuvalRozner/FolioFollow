@@ -60,26 +60,20 @@ function AccountsTab() {
   useEffect(() => { loadData(); }, []);
 
   const handleAdd = async () => {
+    let values;
     try {
-      const values = await form.validateFields();
+      values = await form.validateFields();
+    } catch { return; } // form validation failed — Ant Design shows inline errors
+    try {
       await createAccount(values as CreateAccountDTO);
       message.success(t('admin.accountCreated'));
       form.resetFields();
       setShowAdd(false);
       loadData();
-    } catch (err) { /* validation */ }
-  };
-
-  const handleEdit = async () => {
-    if (!editingAccount) return;
-    try {
-      const values = await form.validateFields();
-      await updateAccount(editingAccount.id, values);
-      message.success(t('admin.accountUpdated'));
-      form.resetFields();
-      setEditingAccount(null);
-      loadData();
-    } catch (err) { /* validation */ }
+    } catch (err) {
+      console.error('Failed to create account:', err);
+      message.error(String((err as any)?.response?.data?.error?.message || (err as Error).message || 'Failed to create account'));
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -94,13 +88,6 @@ function AccountsTab() {
 
   const openEdit = (account: Account) => {
     setEditingAccount(account);
-    form.setFieldsValue({
-      name: account.name,
-      institution: account.institution,
-      type: account.type,
-      currency: account.currency,
-      notes: account.notes || '',
-    });
   };
 
   const columns: ColumnsType<Account> = [
@@ -153,35 +140,6 @@ function AccountsTab() {
     },
   ];
 
-  const formContent = (
-    <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-      <Form.Item name="name" label={t('admin.accountName')} rules={[{ required: true }]}>
-        <Input placeholder="IBI SPARK" />
-      </Form.Item>
-      <Form.Item name="institution" label={t('admin.institution')} rules={[{ required: true }]}>
-        <Input placeholder="IBI" />
-      </Form.Item>
-      <Space style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <Form.Item name="type" label={t('admin.accountType')} rules={[{ required: true }]}>
-          <Select>
-            {['brokerage', 'pension', 'other'].map(type => (
-              <Select.Option key={type} value={type}>{t(`admin.accountTypes.${type}`)}</Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
-        <Form.Item name="currency" label={t('admin.accountCurrency')} rules={[{ required: true }]}>
-          <Select>
-            <Select.Option value="ILS">\u20aa ILS</Select.Option>
-            <Select.Option value="USD">$ USD</Select.Option>
-          </Select>
-        </Form.Item>
-      </Space>
-      <Form.Item name="notes" label={t('admin.notes')}>
-        <Input.TextArea rows={2} />
-      </Form.Item>
-    </Form>
-  );
-
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
@@ -202,22 +160,119 @@ function AccountsTab() {
         onCancel={() => setShowAdd(false)}
         okText={t('admin.save')}
         className="dark-modal"
+        forceRender
+        destroyOnClose={false}
       >
-        {formContent}
+        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item name="name" label={t('admin.accountName')} rules={[{ required: true }]}>
+            <Input placeholder="IBI SPARK" />
+          </Form.Item>
+          <Form.Item name="institution" label={t('admin.institution')} rules={[{ required: true }]}>
+            <Input placeholder="IBI" />
+          </Form.Item>
+          <Space style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <Form.Item name="type" label={t('admin.accountType')} rules={[{ required: true }]}>
+              <Select>
+                {['brokerage', 'pension', 'other'].map(type => (
+                  <Select.Option key={type} value={type}>{t(`admin.accountTypes.${type}`)}</Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item name="currency" label={t('admin.accountCurrency')} rules={[{ required: true }]}>
+              <Select>
+                <Select.Option value="ILS">{`\u20aa ILS`}</Select.Option>
+                <Select.Option value="USD">$ USD</Select.Option>
+              </Select>
+            </Form.Item>
+          </Space>
+          <Form.Item name="notes" label={t('admin.notes')}>
+            <Input.TextArea rows={2} />
+          </Form.Item>
+        </Form>
       </Modal>
 
-      {/* Edit Account Modal */}
-      <Modal
-        title={t('admin.editAccount')}
-        open={!!editingAccount}
-        onOk={handleEdit}
-        onCancel={() => { setEditingAccount(null); form.resetFields(); }}
-        okText={t('admin.save')}
-        className="dark-modal"
-      >
-        {formContent}
-      </Modal>
+      {/* Edit Account Modal — uses separate form instance */}
+      <EditAccountModal
+        account={editingAccount}
+        onClose={() => setEditingAccount(null)}
+        onSuccess={loadData}
+      />
     </div>
+  );
+}
+
+// ===== EDIT ACCOUNT MODAL (separate form instance) =====
+function EditAccountModal({ account, onClose, onSuccess }: { account: Account | null; onClose: () => void; onSuccess: () => void }) {
+  const { t } = useTranslation();
+  const [editForm] = Form.useForm();
+
+  useEffect(() => {
+    if (account) {
+      editForm.setFieldsValue({
+        name: account.name,
+        institution: account.institution,
+        type: account.type,
+        currency: account.currency,
+        notes: account.notes || '',
+      });
+    }
+  }, [account, editForm]);
+
+  const handleSave = async () => {
+    if (!account) return;
+    let values;
+    try {
+      values = await editForm.validateFields();
+    } catch { return; }
+    try {
+      await updateAccount(account.id, values);
+      message.success(t('admin.accountUpdated'));
+      editForm.resetFields();
+      onClose();
+      onSuccess();
+    } catch (err) {
+      console.error('Failed to update account:', err);
+      message.error(String((err as any)?.response?.data?.error?.message || (err as Error).message || 'Failed to update account'));
+    }
+  };
+
+  return (
+    <Modal
+      title={t('admin.editAccount')}
+      open={!!account}
+      onOk={handleSave}
+      onCancel={() => { onClose(); editForm.resetFields(); }}
+      okText={t('admin.save')}
+      className="dark-modal"
+      destroyOnClose
+    >
+      <Form form={editForm} layout="vertical" style={{ marginTop: 16 }}>
+        <Form.Item name="name" label={t('admin.accountName')} rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="institution" label={t('admin.institution')} rules={[{ required: true }]}>
+          <Input />
+        </Form.Item>
+        <Space style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <Form.Item name="type" label={t('admin.accountType')} rules={[{ required: true }]}>
+            <Select>
+              {['brokerage', 'pension', 'other'].map(type => (
+                <Select.Option key={type} value={type}>{t(`admin.accountTypes.${type}`)}</Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="currency" label={t('admin.accountCurrency')} rules={[{ required: true }]}>
+            <Select>
+              <Select.Option value="ILS">{`\u20aa ILS`}</Select.Option>
+              <Select.Option value="USD">$ USD</Select.Option>
+            </Select>
+          </Form.Item>
+        </Space>
+        <Form.Item name="notes" label={t('admin.notes')}>
+          <Input.TextArea rows={2} />
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 }
 
