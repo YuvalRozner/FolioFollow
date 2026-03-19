@@ -20,7 +20,8 @@
     "signOut": "Sign Out",
     "welcome": "Welcome to FolioFollow",
     "subtitle": "Track your investment portfolio intelligently",
-    "demoMode": "Demo Mode"
+    "demoMode": "Demo Mode",
+    "loginFailed": "Login failed. Please try again."
   },
   "dashboard": {
     "title": "Dashboard",

@@ -1,5 +1,5 @@
-import { DEFAULT_LANGUAGE } from '@shared/constants';
-import { User, UserRole } from '@shared/types';
+import { DEFAULT_LANGUAGE } from '../shared/constants';
+import { User, UserRole } from '../shared/types';
 import { collections } from './baseService';
 import { nowIso } from '../utils/date';
 import { notFound } from '../utils/errors';

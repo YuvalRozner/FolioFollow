@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { UserRole } from '@shared/types';
+import { UserRole } from '../shared/types';
 import { userService } from '../services/userService';
 import { adminOnly } from '../middleware/adminOnly';
 import { asyncHandler } from '../utils/asyncHandler';

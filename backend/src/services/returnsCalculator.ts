@@ -1,4 +1,4 @@
-import { Account, Currency, HoldingRow, Lot, LotDetail, LotSale, PortfolioSummary, Security } from '@shared/types';
+import { Account, Currency, HoldingRow, Lot, LotDetail, LotSale, PortfolioSummary, Security } from '../shared/types';
 import { round, safeDivide, sum } from '../utils/math';
 
 export interface CalculatedLotDetail extends LotDetail {

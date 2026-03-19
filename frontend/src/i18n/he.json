@@ -20,7 +20,8 @@
     "signOut": "התנתק",
     "welcome": "ברוך הבא ל-FolioFollow",
     "subtitle": "עקוב אחרי תיק ההשקעות שלך בצורה חכמה",
-    "demoMode": "מצב דמו"
+    "demoMode": "מצב דמו",
+    "loginFailed": "ההתחברות נכשלה. נסה שוב."
   },
   "dashboard": {
     "title": "לוח בקרה",

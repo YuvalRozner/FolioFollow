@@ -1,5 +1,5 @@
-import { Account, CreateAccountDTO } from '@shared/types';
-import { DEFAULT_ACCOUNT_TEMPLATES } from '@shared/constants';
+import { Account, CreateAccountDTO } from '../shared/types';
+import { DEFAULT_ACCOUNT_TEMPLATES } from '../shared/constants';
 import { v4 as uuidv4 } from 'uuid';
 import { collections } from './baseService';
 import { nowIso } from '../utils/date';

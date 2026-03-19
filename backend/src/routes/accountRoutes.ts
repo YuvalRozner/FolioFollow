@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { AccountType, Currency } from '@shared/types';
+import { AccountType, Currency } from '../shared/types';
 import { accountService } from '../services/accountService';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validate } from '../middleware/validate';

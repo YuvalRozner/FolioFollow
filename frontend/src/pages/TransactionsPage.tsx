@@ -1,15 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table, Button, Select, DatePicker, Space, Tag, Empty,
 } from 'antd';
 import { PlusOutlined, ShoppingCartOutlined, ShoppingOutlined, BankOutlined, WalletOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
-import { getTransactions } from '../services/api';
-import { mockAccounts, mockSecurities } from '../services/mockData';
+import { getTransactions, getAccounts, getSecurities } from '../services/api';
 import { formatCurrency, formatNumber, formatDate } from '../utils/format';
 import TransactionForm from '../components/TransactionForm';
-import type { Transaction } from '../../types';
+import type { Account, Security, Transaction } from '../../types';
 
 const { RangePicker } = DatePicker;
 
@@ -30,6 +29,8 @@ const typeColors: Record<string, string> = {
 export default function TransactionsPage() {
   const { t } = useTranslation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [securities, setSecurities] = useState<Security[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
@@ -46,8 +47,16 @@ export default function TransactionsPage() {
     if (typeFilter !== 'all') filters.type = typeFilter;
     if (securityFilter !== 'all') filters.securityId = securityFilter;
     if (currencyFilter !== 'all') filters.currency = currencyFilter;
-    const data = await getTransactions(filters);
-    setTransactions(data);
+
+    const [transactionsData, accountsData, securitiesData] = await Promise.all([
+      getTransactions(filters),
+      getAccounts(),
+      getSecurities(),
+    ]);
+
+    setTransactions(transactionsData);
+    setAccounts(accountsData);
+    setSecurities(securitiesData);
     setLoading(false);
   };
 
@@ -55,12 +64,12 @@ export default function TransactionsPage() {
 
   const getSecurityLabel = (secId?: string) => {
     if (!secId) return '—';
-    const sec = mockSecurities.find(s => s.id === secId);
+    const sec = securities.find(s => s.id === secId);
     return sec ? sec.symbol : secId;
   };
 
   const getAccountLabel = (accId: string) => {
-    const acc = mockAccounts.find(a => a.id === accId);
+    const acc = accounts.find(a => a.id === accId);
     return acc ? acc.name : accId;
   };
 
@@ -100,7 +109,7 @@ export default function TransactionsPage() {
       width: 140,
       render: (_: unknown, record: Transaction) => {
         if (!record.securityId) return <span style={{ color: '#484f58' }}>—</span>;
-        const sec = mockSecurities.find(s => s.id === record.securityId);
+        const sec = securities.find(s => s.id === record.securityId);
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#e6edf3' }}>{sec?.symbol}</div>
@@ -197,7 +206,7 @@ export default function TransactionsPage() {
         <Space size={12} wrap>
           <Select value={accountFilter} onChange={setAccountFilter} style={{ width: 180 }}>
             <Select.Option value="all">{t('holdings.allAccounts')}</Select.Option>
-            {mockAccounts.map(acc => (
+            {accounts.map(acc => (
               <Select.Option key={acc.id} value={acc.id}>{acc.name}</Select.Option>
             ))}
           </Select>
@@ -216,7 +225,7 @@ export default function TransactionsPage() {
             optionFilterProp="label"
           >
             <Select.Option value="all">{t('transactions.allSecurities')}</Select.Option>
-            {mockSecurities.map(sec => (
+            {securities.map(sec => (
               <Select.Option key={sec.id} value={sec.id} label={`${sec.symbol} ${sec.name}`}>
                 {sec.symbol} — {sec.name}
               </Select.Option>
