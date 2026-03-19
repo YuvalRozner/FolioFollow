@@ -29,13 +29,21 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     setLoading(true);
-    const [summaryData, holdingsData] = await Promise.all([
-      getPortfolioSummary(),
-      getHoldings(),
-    ]);
-    setSummary(summaryData);
-    setHoldings(holdingsData);
-    setLoading(false);
+    try {
+      const [summaryData, holdingsData] = await Promise.all([
+        getPortfolioSummary(),
+        getHoldings(),
+      ]);
+      setSummary(summaryData);
+      setHoldings(holdingsData);
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+      // Set empty defaults so the page still renders
+      setSummary(null);
+      setHoldings([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadData(); }, []);

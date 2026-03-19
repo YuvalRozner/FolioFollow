@@ -11,18 +11,23 @@ export class UserService {
     const now = nowIso();
 
     if (!snapshot.exists) {
+      // First user in the system automatically becomes admin
+      const allUsers = await collections.users().limit(1).get();
+      const isFirstUser = allUsers.empty;
+
       const newUser: User = {
         id: params.uid,
         email: params.email ?? '',
         displayName: params.name ?? params.email ?? 'User',
         photoURL: params.picture,
-        role: UserRole.USER,
+        role: isFirstUser ? UserRole.ADMIN : UserRole.USER,
         language: DEFAULT_LANGUAGE,
         createdAt: now,
         updatedAt: now,
       };
 
       await ref.set(newUser);
+      console.log(`New user created: ${params.email} (role: ${newUser.role}${isFirstUser ? ' — first user, granted admin' : ''})`);
       return newUser;
     }
 
@@ -31,6 +36,15 @@ export class UserService {
     if (params.email && existing.email !== params.email) updates.email = params.email;
     if (params.name && existing.displayName !== params.name) updates.displayName = params.name;
     if (params.picture && existing.photoURL !== params.picture) updates.photoURL = params.picture;
+
+    // Auto-promote: if this is the only user in the system and not yet admin, promote them
+    if (existing.role !== UserRole.ADMIN) {
+      const allUsers = await collections.users().limit(2).get();
+      if (allUsers.size === 1) {
+        updates.role = UserRole.ADMIN;
+        console.log(`Auto-promoted ${params.email} to admin (only user in system)`);
+      }
+    }
 
     if (Object.keys(updates).length > 0) {
       updates.updatedAt = now;
